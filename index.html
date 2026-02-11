@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <title>Hill Racer 2D</title>
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+
+<body>
+  <div id="game-wrapper">
+    <div id="game-container"></div>
+    <div id="ui-layer">
+      <div id="main-menu" class="menu-screen">
+        <h1 class="title">HILL RACER 2D</h1>
+
+        <div class="menu-group">
+          <label for="car-select">VEHICLE:</label>
+          <select id="car-select" class="menu-select">
+            <option value="JEEP">JEEP (Balanced)</option>
+            <option value="SPORT">SPORTS CAR (Fast)</option>
+            <option value="TRUCK">MONSTER TRUCK (Heavy)</option>
+            <option value="BIKE">ROYAL ENFIELD (Cafe Racer)</option>
+          </select>
+        </div>
+
+        <div class="menu-group">
+          <label for="terrain-select">TERRAIN:</label>
+          <select id="terrain-select" class="menu-select">
+            <option value="GRASS">GRASSY HILLS</option>
+            <option value="DESERT">DESERT DUNES</option>
+            <option value="MOON">MOON CRATERS</option>
+          </select>
+        </div>
+
+        <button id="start-btn" class="menu-btn">PLAY</button>
+        <button id="shop-open-btn" class="menu-btn">UPGRADES</button>
+        <button id="settings-btn" class="menu-btn">SETTINGS</button>
+      </div>
+
+      <div id="shop-menu" class="menu-screen hidden">
+        <h2 class="title">GARAGE</h2>
+        <div class="score-box">COINS: <span id="shop-coins">0</span></div>
+        <div class="shop-grid">
+          <!-- Placeholder Upgrades -->
+          <div class="shop-item">
+            <span>ENGINE</span>
+            <button id="buy-engine" class="upgrade-btn">500</button>
+          </div>
+          <div class="shop-item">
+            <span>TIRES</span>
+            <button id="buy-tires" class="upgrade-btn">500</button>
+          </div>
+          <div class="shop-item">
+            <span>FUEL</span>
+            <button id="buy-fuel" class="upgrade-btn">500</button>
+          </div>
+        </div>
+        <button id="shop-close-btn" class="menu-btn" style="margin-top:20px;">BACK</button>
+      </div>
+      <div id="hud" class="hidden">
+        <div class="hud-top">
+          <div class="score-box">DISTANCE: <span id="distance">0</span>m</div>
+          <div class="score-box">COINS: <span id="coins">0</span></div>
+        </div>
+        <div class="fuel-bar-container">
+          <div class="fuel-icon">⛽</div>
+          <div class="fuel-bar-bg">
+            <div id="fuel-bar-fill" class="fuel-bar-fill"></div>
+          </div>
+        </div>
+        <button id="pause-btn" class="hud-btn">II</button>
+      </div>
+      <div id="pause-menu" class="menu-screen hidden">
+        <h2>PAUSED</h2>
+        <button id="resume-btn" class="menu-btn">RESUME</button>
+        <button id="restart-btn" class="menu-btn">RESTART</button>
+      </div>
+      <div id="game-over-screen" class="menu-screen hidden">
+        <h2>GAME OVER</h2>
+        <p id="game-over-reason">Out of Fuel!</p>
+        <p>Distance: <span id="final-distance">0</span>m</p>
+        <p>Coins: <span id="final-coins">0</span></p>
+        <button id="restart-game-btn" class="menu-btn">TRY AGAIN</button>
+      </div>
+      <!-- Mobile Controls Overlay (visible on mobile/toggle) -->
+      <div id="mobile-controls">
+        <button id="brake-btn" class="control-btn brake">BRAKE</button>
+        <button id="nitro-btn" class="control-btn nitro">NITRO</button>
+        <button id="gas-btn" class="control-btn gas">GAS</button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
