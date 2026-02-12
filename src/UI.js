@@ -4,6 +4,7 @@ export default class UIManager {
         this.distanceText = document.getElementById('distance');
         this.coinsText = document.getElementById('coins');
         this.fuelBar = document.getElementById('fuel-bar-fill');
+        this.nitroBar = document.getElementById('nitro-bar-fill');
 
         this.menuMain = document.getElementById('main-menu');
         this.menuPause = document.getElementById('pause-menu');
@@ -198,10 +199,15 @@ export default class UIManager {
         this.mobileControls.classList.add('hidden');
     }
 
-    updateHUD(distance, coins, fuel) {
+    updateHUD(distance, coins, fuel, nitro = 100) {
         this.distanceText.innerText = Math.floor(distance);
         this.coinsText.innerText = coins;
         this.fuelBar.style.width = `${Math.max(0, Math.min(100, fuel))}%`;
+
+        if (this.nitroBar) {
+            this.nitroBar.style.width = `${Math.max(0, Math.min(100, nitro))}%`;
+            // Color change? Maybe just cyan
+        }
 
         // Colorize fuel bar
         if (fuel < 20) this.fuelBar.style.background = 'red';

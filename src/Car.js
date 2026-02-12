@@ -729,7 +729,7 @@ export default class Car {
         // NITRO LOGIC
         if (nitro) {
             currentSpeed *= 2.5; // Boost speed limit
-            this.nitroFuel = Math.max(0, this.nitroFuel - 0.5); // Drain
+            this.nitroFuel = Math.max(0, this.nitroFuel - 0.25); // Moderate Drain
 
             // Boost Force on chassis
             const force = 0.002 * this.chassis.mass;
@@ -738,10 +738,8 @@ export default class Car {
                 x: Math.cos(angle) * force,
                 y: Math.sin(angle) * force
             });
-        } else {
-            // Regen nitro slowly
-            this.nitroFuel = Math.min(this.maxNitro, this.nitroFuel + 0.1);
         }
+        // No auto-regen allowed! (Replenished by distance)
 
         const maxSpeed = 0.6; // Angular velocity limit
 

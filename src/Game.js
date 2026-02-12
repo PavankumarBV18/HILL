@@ -110,7 +110,7 @@ export default class Game extends Phaser.Scene {
             this.savedData = JSON.parse(data);
         } else {
             this.savedData = {
-                coins: 0,
+                coins: 500, // Start with 500 coins as requested
                 upgrades: { engine: 0, tires: 0, fuel: 0 },
                 unlockedVehicles: ['JEEP'],
                 unlockedTerrains: ['GRASS']
@@ -217,7 +217,7 @@ export default class Game extends Phaser.Scene {
                 this.soundManager.playCoin();
                 this.particles.emitCollection(itemBody.position.x, itemBody.position.y, 'coin');
                 this.showFloatingText(itemBody.position.x, itemBody.position.y, "+1", '#ffff00');
-                this.ui.updateHUD(this.distance / 100, this.coins, this.fuel);
+                this.ui.updateHUD(this.distance / 100, this.coins, this.fuel, this.car.nitroFuel);
                 this.saveProgress();
             } else if (type === 'crate') {
                 // Break crate
@@ -227,7 +227,7 @@ export default class Game extends Phaser.Scene {
                 // For now just destroy
                 itemBody.gameObject.destroy();
                 this.showFloatingText(itemBody.position.x, itemBody.position.y, "+100", '#ffa500');
-                this.ui.updateHUD(this.distance / 100, this.coins, this.fuel);
+                this.ui.updateHUD(this.distance / 100, this.coins, this.fuel, this.car.nitroFuel);
             }
 
         }
@@ -264,7 +264,7 @@ export default class Game extends Phaser.Scene {
 
         this.coins += 50;
         this.fuel = Math.min(100, this.fuel + 10);
-        this.ui.updateHUD(this.distance / 100, this.coins, this.fuel);
+        this.ui.updateHUD(this.distance / 100, this.coins, this.fuel, this.car ? this.car.nitroFuel : 0);
 
         // Show Text
         const text = this.add.text(this.car.getX(), this.car.chassis.position.y - 100, 'FLIP!', {
@@ -327,6 +327,7 @@ export default class Game extends Phaser.Scene {
         this.score = 0;
         this.fuel = 100;
         this.distance = 0;
+        this.lastNitroReplenish = 0; // Track nitro refills
 
         // Reset/Recreate World
         if (this.car) this.car.destroy();
@@ -434,6 +435,16 @@ export default class Game extends Phaser.Scene {
         // Update Distance
         if (carX > this.distance) {
             this.distance = carX;
+
+            // Replenish Nitro every 50m (5000px)
+            const currentLeg = Math.floor(this.distance / 5000);
+            if (currentLeg > this.lastNitroReplenish) {
+                this.lastNitroReplenish = currentLeg;
+                if (this.car) {
+                    this.car.nitroFuel = 100; // Full Refill
+                    this.showFloatingText(this.car.getX(), this.car.chassis.position.y, "NITRO FILLED!", '#00FFFF');
+                }
+            }
         }
 
         // Fuel Logic
@@ -444,6 +455,9 @@ export default class Game extends Phaser.Scene {
         if (this.fuel <= 0) {
             this.gameOver('Out of Fuel!');
         }
+
+        const nitroLevel = this.car ? this.car.nitroFuel : 0;
+        this.ui.updateHUD(this.distance / 100, this.coins, this.fuel, nitroLevel);
 
         // Check if car flipped
         // Simple angle check (if chassis is upside down > 120deg)
