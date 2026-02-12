@@ -763,24 +763,29 @@ export default class Car {
         const rayLength = 10; // How far down to check for ground
         const wheelRadius = 15; // Approximate wheel radius
 
+        const Matter = Phaser.Physics.Matter.Matter;
+        const allBodies = this.scene.matter.world.getAllBodies();
+
         // Raycast from rear wheel
-        const rearRayStart = { x: this.rearWheel.position.x, y: this.rearWheel.position.y };
-        const rearRayEnd = { x: this.rearWheel.position.x, y: this.rearWheel.position.y + wheelRadius + rayLength };
-        const rearHit = this.scene.matter.world.raycast(rearRayStart, rearRayEnd, {
-            collisionFilter: { category: this.scene.collisionCategories.ground }
-        });
+        const rearStart = this.rearWheel.position;
+        const rearEnd = { x: rearStart.x, y: rearStart.y + wheelRadius + rayLength };
+        const rearHits = Matter.Query.ray(allBodies, rearStart, rearEnd);
+        const rearGrounded = rearHits.some(hit =>
+            hit.body !== this.rearWheel && hit.body !== this.chassis && hit.body.label === 'ground_slice'
+        );
 
         // Raycast from front wheel
-        const frontRayStart = { x: this.frontWheel.position.x, y: this.frontWheel.position.y };
-        const frontRayEnd = { x: this.frontWheel.position.x, y: this.frontWheel.position.y + wheelRadius + rayLength };
-        const frontHit = this.scene.matter.world.raycast(frontRayStart, frontRayEnd, {
-            collisionFilter: { category: this.scene.collisionCategories.ground }
-        });
+        const frontStart = this.frontWheel.position;
+        const frontEnd = { x: frontStart.x, y: frontStart.y + wheelRadius + rayLength };
+        const frontHits = Matter.Query.ray(allBodies, frontStart, frontEnd);
+        const frontGrounded = frontHits.some(hit =>
+            hit.body !== this.frontWheel && hit.body !== this.chassis && hit.body.label === 'ground_slice'
+        );
 
-        if (rearHit.collided || frontHit.collided) {
+        if (rearGrounded || frontGrounded) {
             grounded = true;
         }
-        this.onGround = grounded; // Update the onGround state
+        this.onGround = grounded;
 
         const airTorque = 0.005; // Gentle rotation
 

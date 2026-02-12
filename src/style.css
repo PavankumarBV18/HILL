@@ -142,6 +142,18 @@ body {
   box-shadow: 0 0 15px var(--primary);
 }
 
+.menu-coins {
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #ffd700;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  border: 2px solid #ffd700;
+  display: inline-block;
+}
+
 .menu-group {
   display: flex;
   flex-direction: column;

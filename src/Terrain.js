@@ -7,7 +7,7 @@ export default class TerrainManager {
         this.chunks = [];
         this.chunkWidth = 2000;
         this.nextChunkIndex = 0;
-        this.catGround = this.scene.matter.world.nextCategory();
+        this.catGround = this.scene.collisionCategories.ground;
 
         // Define Properties based on type
         this.properties = this.getProperties(type);
@@ -199,9 +199,9 @@ export default class TerrainManager {
 
         points.forEach((p, i) => {
             // 1. Coins and Fuel (Standard)
-            // Reduced frequency slightly to make them more rewarding
-            if (i % 5 === 0 && Math.random() < 0.4) {
-                const type = Math.random() > 0.8 ? 'fuel' : 'coin';
+            // Increased frequency significantly
+            if (i % 3 === 0 && Math.random() < 0.7) {
+                const type = Math.random() > 0.9 ? 'fuel' : 'coin'; // 90% coins
                 const color = type === 'fuel' ? 0xff0000 : 0xffd700;
 
                 const item = this.scene.add.circle(p.x, p.y - 40, 15, color);

@@ -81,10 +81,27 @@ export default class UIManager {
         this.menuShop.classList.add('hidden');
         this.mobileControls.classList.add('hidden');
 
+        // Check if current selection is locked (e.g. browser cached selection)
+        const selCar = document.getElementById('car-select');
+        const selTerrain = document.getElementById('terrain-select');
+
+        if (selCar && selTerrain) {
+            if (!this.scene.checkUnlock('vehicle', selCar.value)) {
+                selCar.value = 'JEEP';
+            }
+            if (!this.scene.checkUnlock('terrain', selTerrain.value)) {
+                selTerrain.value = 'GRASS';
+            }
+        }
+
         this.updateMainMenuButtons();
     }
 
     updateMainMenuButtons() {
+        // Update Coin
+        const coinDisp = document.getElementById('menu-coins-display');
+        if (coinDisp) coinDisp.innerText = this.scene.coins;
+
         const selCar = document.getElementById('car-select');
         const selTerrain = document.getElementById('terrain-select');
         const btn = document.getElementById('start-btn');

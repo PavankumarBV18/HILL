@@ -18,6 +18,13 @@ export default class Game extends Phaser.Scene {
 
     create() {
         this.gameState = 'MENU';
+
+        // Define Collision Categories EARLY
+        this.collisionCategories = {
+            default: 1,
+            ground: this.matter.world.nextCategory()
+        };
+
         this.score = 0;
 
         // Load saved progress
@@ -110,16 +117,20 @@ export default class Game extends Phaser.Scene {
             };
         }
 
-        // Backwards compatibility fix
-        if (!this.savedData.unlockedVehicles) this.savedData.unlockedVehicles = ['JEEP'];
-        if (!this.savedData.unlockedTerrains) this.savedData.unlockedTerrains = ['GRASS'];
+        // Ensure defaults are unlocked
+        if (!this.savedData.unlockedVehicles || this.savedData.unlockedVehicles.length === 0)
+            this.savedData.unlockedVehicles = ['JEEP'];
+        if (!this.savedData.unlockedTerrains || this.savedData.unlockedTerrains.length === 0)
+            this.savedData.unlockedTerrains = ['GRASS'];
+
+        this.coins = this.savedData.coins || 0;
     }
 
     getCosts() {
         return {
             vehicles: {
-                'JEEP': 0,
-                'BIKE': 500,
+                'JEEP': 0, // Free
+                'BIKE': 500, // Cheap first unlock
                 'TRACTOR': 1000,
                 'SPORT': 2000,
                 'ATV': 2500,
@@ -128,9 +139,9 @@ export default class Game extends Phaser.Scene {
                 'BUS': 6000
             },
             terrains: {
-                'GRASS': 0,
-                'DESERT': 1000,
-                'FOREST': 2000,
+                'GRASS': 0, // Free
+                'DESERT': 500, // Cheap first unlock
+                'FOREST': 1500,
                 'MARS': 3000,
                 'MOON': 5000
             }
@@ -199,25 +210,52 @@ export default class Game extends Phaser.Scene {
                 this.fuel = Math.min(100, this.fuel + 40);
                 this.soundManager.playFuel();
                 this.particles.emitCollection(itemBody.position.x, itemBody.position.y, 'fuel');
+                this.showFloatingText(itemBody.position.x, itemBody.position.y, "FUEL!", '#ff0000');
             } else if (type === 'coin') {
-                this.coins = (this.coins || 0) + 1;
-                console.log('Coin collected! Total:', this.coins);
+                // Collect Coin
+                this.coins += 1; // Back to 1
                 this.soundManager.playCoin();
                 this.particles.emitCollection(itemBody.position.x, itemBody.position.y, 'coin');
+                this.showFloatingText(itemBody.position.x, itemBody.position.y, "+1", '#ffff00');
                 this.ui.updateHUD(this.distance / 100, this.coins, this.fuel);
                 this.saveProgress();
             } else if (type === 'crate') {
                 // Break crate
-                this.coins += 20; // Bonus
+                this.coins += 100; // Big bonus
                 this.soundManager.playCrash(); // Re-use crash or make new crunch sound
                 // Particle explosion?
                 // For now just destroy
                 itemBody.gameObject.destroy();
+                this.showFloatingText(itemBody.position.x, itemBody.position.y, "+100", '#ffa500');
                 this.ui.updateHUD(this.distance / 100, this.coins, this.fuel);
             }
 
-            // Remove Item (handled above for crate/fuel/coin individually if needed, but here simple)
         }
+
+        // Remove Item
+        if (itemBody && itemBody.gameObject && itemBody.gameObject.active) {
+            itemBody.gameObject.destroy();
+        }
+    }
+
+    showFloatingText(x, y, message, color) {
+        const text = this.add.text(x, y - 20, message, {
+            fontSize: '24px',
+            fontFamily: 'Arial',
+            color: color,
+            stroke: '#000000',
+            strokeThickness: 3,
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        this.tweens.add({
+            targets: text,
+            y: y - 80,
+            alpha: 0,
+            duration: 800,
+            ease: 'Power1',
+            onComplete: () => text.destroy()
+        });
     }
 
     triggerFlipBonus() {
