@@ -33,6 +33,13 @@ export default class UIManager {
         this.btnRestart.onclick = () => this.scene.restartGame();
         this.btnRestartGame.onclick = () => this.scene.restartGame();
 
+        // New Back Buttons
+        const btnBackHome = document.getElementById('back-home-btn');
+        if (btnBackHome) btnBackHome.onclick = () => this.scene.quitGame();
+
+        const btnBackHomeOver = document.getElementById('back-home-over-btn');
+        if (btnBackHomeOver) btnBackHomeOver.onclick = () => this.scene.quitGame();
+
         // Shop Upgrades
         if (this.btnShop) this.btnShop.onclick = () => this.showShop();
         if (this.btnCloseShop) this.btnCloseShop.onclick = () => this.hideShop();

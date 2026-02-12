@@ -281,6 +281,23 @@ export default class Game extends Phaser.Scene {
         this.startGame();
     }
 
+    quitGame() {
+        this.gameState = 'MENU';
+        this.soundManager.stopEngine();
+        this.scene.resume();
+
+        // Cleanup if needed
+        if (this.car) this.car.destroy();
+        if (this.terrain) this.terrain.reset();
+
+        this.ui.showMainMenu();
+
+        // Reset camera
+        this.cameras.main.stopFollow();
+        this.cameras.main.setScroll(0, 0);
+        this.cameras.main.setZoom(1.0);
+    }
+
     update(time, delta) {
         if (this.gameState !== 'PLAY') return;
 
