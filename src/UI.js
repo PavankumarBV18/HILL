@@ -27,7 +27,20 @@ export default class UIManager {
     }
 
     bindEvents() {
-        this.btnStart.onclick = () => this.scene.startGame();
+        this.btnStart.onclick = () => {
+            const carVal = document.getElementById('car-select').value;
+            const terrainVal = document.getElementById('terrain-select').value;
+
+            // Check if locked
+            if (!this.scene.checkUnlock('vehicle', carVal)) {
+                this.scene.unlockContent('vehicle', carVal);
+            } else if (!this.scene.checkUnlock('terrain', terrainVal)) {
+                this.scene.unlockContent('terrain', terrainVal);
+            } else {
+                this.scene.startGame();
+            }
+        };
+
         this.btnPause.onclick = () => this.scene.pauseGame();
         this.btnResume.onclick = () => this.scene.resumeGame();
         this.btnRestart.onclick = () => this.scene.restartGame();
@@ -51,6 +64,13 @@ export default class UIManager {
         bindUpgrade('buy-engine', 'engine');
         bindUpgrade('buy-tires', 'tires');
         bindUpgrade('buy-fuel', 'fuel');
+
+        // Listen for changes
+        const selCar = document.getElementById('car-select');
+        const selTerrain = document.getElementById('terrain-select');
+
+        selCar.onchange = () => this.updateMainMenuButtons();
+        selTerrain.onchange = () => this.updateMainMenuButtons();
     }
 
     showMainMenu() {
@@ -60,6 +80,34 @@ export default class UIManager {
         this.menuGameOver.classList.add('hidden');
         this.menuShop.classList.add('hidden');
         this.mobileControls.classList.add('hidden');
+
+        this.updateMainMenuButtons();
+    }
+
+    updateMainMenuButtons() {
+        const selCar = document.getElementById('car-select');
+        const selTerrain = document.getElementById('terrain-select');
+        const btn = document.getElementById('start-btn');
+
+        const carVal = selCar.value;
+        const terrainVal = selTerrain.value;
+
+        const isCarUnlocked = this.scene.checkUnlock('vehicle', carVal);
+        const isTerrainUnlocked = this.scene.checkUnlock('terrain', terrainVal);
+        const costs = this.scene.getCosts();
+
+        if (!isCarUnlocked) {
+            const cost = costs.vehicles[carVal];
+            btn.innerText = `UNLOCK VEHICLE (${cost})`;
+            btn.style.background = this.scene.coins >= cost ? '#e67e22' : '#95a5a6';
+        } else if (!isTerrainUnlocked) {
+            const cost = costs.terrains[terrainVal];
+            btn.innerText = `UNLOCK TERRAIN (${cost})`;
+            btn.style.background = this.scene.coins >= cost ? '#e67e22' : '#95a5a6';
+        } else {
+            btn.innerText = 'PLAY';
+            btn.style.background = '#2ecc71';
+        }
     }
 
     showGameUI() {

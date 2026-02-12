@@ -102,35 +102,62 @@ export default class Game extends Phaser.Scene {
         if (data) {
             this.savedData = JSON.parse(data);
         } else {
-            this.savedData = { coins: 0, upgrades: { engine: 0, tires: 0, fuel: 0 } };
+            this.savedData = {
+                coins: 0,
+                upgrades: { engine: 0, tires: 0, fuel: 0 },
+                unlockedVehicles: ['JEEP'],
+                unlockedTerrains: ['GRASS']
+            };
         }
+
+        // Backwards compatibility fix
+        if (!this.savedData.unlockedVehicles) this.savedData.unlockedVehicles = ['JEEP'];
+        if (!this.savedData.unlockedTerrains) this.savedData.unlockedTerrains = ['GRASS'];
     }
 
-    buyUpgrade(type) {
-        // Upgrade configs
-        const upgrades = {
-            'engine': { cost: 500, max: 5 },
-            'tires': { cost: 500, max: 5 },
-            'fuel': { cost: 500, max: 5 }
+    getCosts() {
+        return {
+            vehicles: {
+                'JEEP': 0,
+                'BIKE': 500,
+                'TRACTOR': 1000,
+                'SPORT': 2000,
+                'ATV': 2500,
+                'RACEBIKE': 3000,
+                'TRUCK': 5000,
+                'BUS': 6000
+            },
+            terrains: {
+                'GRASS': 0,
+                'DESERT': 1000,
+                'FOREST': 2000,
+                'MARS': 3000,
+                'MOON': 5000
+            }
         };
+    }
 
-        const config = upgrades[type];
-        if (!config) return false;
+    checkUnlock(category, type) {
+        if (category === 'vehicle') return this.savedData.unlockedVehicles.includes(type);
+        if (category === 'terrain') return this.savedData.unlockedTerrains.includes(type);
+        return false;
+    }
 
-        const currentLevel = this.savedData.upgrades[type] || 0;
+    unlockContent(category, type) {
+        const costs = this.getCosts();
+        let cost = 0;
 
-        // Already maxed?
-        if (currentLevel >= config.max) return false;
+        if (category === 'vehicle') cost = costs.vehicles[type];
+        if (category === 'terrain') cost = costs.terrains[type];
 
-        // Can afford?
-        if (this.coins >= config.cost) {
-            this.coins -= config.cost;
-            this.savedData.upgrades[type] = currentLevel + 1;
+        if (this.coins >= cost) {
+            this.coins -= cost;
+            if (category === 'vehicle') this.savedData.unlockedVehicles.push(type);
+            if (category === 'terrain') this.savedData.unlockedTerrains.push(type);
             this.saveProgress();
-            this.ui.updateShopUI(); // Reflect changes
+            this.ui.updateMainMenuButtons(); // Update UI
             return true;
         }
-
         return false;
     }
 
@@ -179,22 +206,78 @@ export default class Game extends Phaser.Scene {
                 this.particles.emitCollection(itemBody.position.x, itemBody.position.y, 'coin');
                 this.ui.updateHUD(this.distance / 100, this.coins, this.fuel);
                 this.saveProgress();
+            } else if (type === 'crate') {
+                // Break crate
+                this.coins += 20; // Bonus
+                this.soundManager.playCrash(); // Re-use crash or make new crunch sound
+                // Particle explosion?
+                // For now just destroy
+                itemBody.gameObject.destroy();
+                this.ui.updateHUD(this.distance / 100, this.coins, this.fuel);
             }
 
-            // Remove Item
-            itemBody.gameObject.destroy();
+            // Remove Item (handled above for crate/fuel/coin individually if needed, but here simple)
         }
     }
 
+    triggerFlipBonus() {
+        if (this.lastFlipTime && this.time.now - this.lastFlipTime < 1000) return;
+        this.lastFlipTime = this.time.now;
+
+        this.coins += 50;
+        this.fuel = Math.min(100, this.fuel + 10);
+        this.ui.updateHUD(this.distance / 100, this.coins, this.fuel);
+
+        // Show Text
+        const text = this.add.text(this.car.getX(), this.car.chassis.position.y - 100, 'FLIP!', {
+            fontSize: '40px', color: '#ff00ff', fontStyle: 'bold', stroke: '#ffffff', strokeThickness: 4
+        }).setOrigin(0.5);
+
+        this.tweens.add({
+            targets: text,
+            y: text.y - 100,
+            alpha: 0,
+            duration: 1000,
+            onComplete: () => text.destroy()
+        });
+    }
+
+    buyUpgrade(type) {
+        const upgrades = {
+            'engine': { cost: 500, max: 5 },
+            'tires': { cost: 500, max: 5 },
+            'fuel': { cost: 500, max: 5 }
+        };
+        const config = upgrades[type];
+        if (!config) return false;
+        const currentLevel = this.savedData.upgrades[type] || 0;
+        if (currentLevel >= config.max) return false;
+        if (this.coins >= config.cost) {
+            this.coins -= config.cost;
+            this.savedData.upgrades[type] = currentLevel + 1;
+            this.saveProgress();
+            this.ui.updateShopUI();
+            return true;
+        }
+        return false;
+    }
+
     startGame() {
-        this.gameState = 'PLAY';
-
-        // Re-init BG if needed (if scene was restarted, but here we just reset vars)
-        // this.bg.layers... 
-
         // Read Selections
         const carType = document.getElementById('car-select').value;
         const terrainType = document.getElementById('terrain-select').value;
+
+        // Validation (Security)
+        if (!this.checkUnlock('vehicle', carType)) {
+            alert("Vehicle Locked! Buy it first."); // Fallback
+            return;
+        }
+        if (!this.checkUnlock('terrain', terrainType)) {
+            alert("Terrain Locked! Buy it first.");
+            return;
+        }
+
+        this.gameState = 'PLAY';
 
         // Resume Audio Context
         if (this.soundManager.ctx.state === 'suspended') {
@@ -204,14 +287,12 @@ export default class Game extends Phaser.Scene {
 
         // Reset Data
         this.score = 0;
-        console.log('Starting Run. Current Coins:', this.coins);
-
         this.fuel = 100;
         this.distance = 0;
 
         // Reset/Recreate World
         if (this.car) this.car.destroy();
-        if (this.terrain) this.terrain.reset(); // Clear old chunks
+        if (this.terrain) this.terrain.reset();
 
         // Re-init Terrain with new type
         this.terrain = new TerrainManager(this, terrainType);
@@ -219,11 +300,11 @@ export default class Game extends Phaser.Scene {
 
         // Gravity Settings
         if (terrainType === 'MOON') {
-            this.matter.world.setGravity(0, 0.4); // Low gravity
+            this.matter.world.setGravity(0, 0.4);
         } else if (terrainType === 'MARS') {
-            this.matter.world.setGravity(0, 0.6); // Mars gravity
+            this.matter.world.setGravity(0, 0.6);
         } else {
-            this.matter.world.setGravity(0, 1); // Normal gravity
+            this.matter.world.setGravity(0, 1);
         }
 
         // Create Car
@@ -231,24 +312,20 @@ export default class Game extends Phaser.Scene {
 
         // APPLY UPGRADES
         const u = this.savedData.upgrades;
-
-        // 1. Engine (Increase acceleration/speed)
+        // 1. Engine
         if (u.engine > 0) {
-            this.car.currentWheelSpeed += u.engine * 0.005; // Base is 0.05
+            this.car.currentWheelSpeed += u.engine * 0.005;
         }
-
-        // 2. Tires (Increase friction)
+        // 2. Tires
         if (u.tires > 0) {
             const extraFriction = u.tires * 0.2;
             this.car.rearWheel.friction = 0.9 + extraFriction;
             this.car.frontWheel.friction = 0.9 + extraFriction;
         }
-
-        // 3. Fuel (Start with more fuel)
+        // 3. Fuel
         if (u.fuel > 0) {
             const extraFuel = u.fuel * 20;
             this.fuel = 100 + extraFuel;
-            // Also increase tank visual capacity if needed, but for now just overfill
         }
 
         // Camera Follow
@@ -337,11 +414,18 @@ export default class Game extends Phaser.Scene {
             this.gameOver('Driver Neck Broken!');
         }
 
-        // Update UI
-        this.ui.updateHUD(this.distance / 100, this.coins, this.fuel);
-    }
-
-
+        // Flip Detection
+        if (this.car && this.car.airSpin) {
+            if (this.car.onGround && Math.abs(this.car.airSpin) > Math.PI * 1.5) {
+                // Landed a flip
+                this.triggerFlipBonus();
+                this.car.airSpin = 0; // Reset
+            } else if (this.car.onGround) {
+                // Landed without flip
+                this.car.airSpin = 0;
+            }
+        }
+    } // End update
 
     gameOver(reason) {
         this.gameState = 'GAMEOVER';
@@ -350,3 +434,6 @@ export default class Game extends Phaser.Scene {
         this.ui.showGameOver(this.distance / 100, this.coins, reason);
     }
 }
+
+
+

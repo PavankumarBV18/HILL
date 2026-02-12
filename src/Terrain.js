@@ -229,7 +229,41 @@ export default class TerrainManager {
             if (this.type === 'FOREST' && i % 4 === 0 && Math.random() < 0.4) {
                 this.createTree(p.x, p.y);
             }
+
+            // 4. Breakables (All Terrains - rare)
+            if (i % 10 === 0 && Math.random() < 0.2) {
+                this.createCrate(p.x, p.y);
+            }
         });
+    }
+
+    createCrate(x, y) {
+        const size = 40;
+        const crate = this.scene.add.graphics({ x, y });
+        crate.fillStyle(0x8D6E63);
+        crate.fillRect(-size / 2, -size / 2, size, size);
+        crate.lineStyle(2, 0x5D4037);
+        crate.strokeRect(-size / 2, -size / 2, size, size);
+
+        // Cross
+        crate.lineStyle(2, 0x3E2723);
+        crate.beginPath();
+        crate.moveTo(-size / 2, -size / 2); crate.lineTo(size / 2, size / 2);
+        crate.moveTo(size / 2, -size / 2); crate.lineTo(-size / 2, size / 2);
+        crate.strokePath();
+
+        const bodyY = y - size / 2;
+
+        this.scene.matter.add.gameObject(crate, {
+            shape: { type: 'rectangle', width: size, height: size },
+            isStatic: false,
+            density: 0.01,
+            friction: 0.5,
+            label: 'crate'
+        });
+
+        crate.setPosition(x, bodyY);
+        this.chunks[this.chunks.length - 1].items.push(crate);
     }
 
     createStone(x, y) {

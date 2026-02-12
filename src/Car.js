@@ -757,7 +757,63 @@ export default class Car {
             }
         }
 
+        // AIR CONTROL & FLIPS
+        // Check if grounded using raycast from wheels
+        let grounded = false;
+        const rayLength = 10; // How far down to check for ground
+        const wheelRadius = 15; // Approximate wheel radius
 
+        // Raycast from rear wheel
+        const rearRayStart = { x: this.rearWheel.position.x, y: this.rearWheel.position.y };
+        const rearRayEnd = { x: this.rearWheel.position.x, y: this.rearWheel.position.y + wheelRadius + rayLength };
+        const rearHit = this.scene.matter.world.raycast(rearRayStart, rearRayEnd, {
+            collisionFilter: { category: this.scene.collisionCategories.ground }
+        });
+
+        // Raycast from front wheel
+        const frontRayStart = { x: this.frontWheel.position.x, y: this.frontWheel.position.y };
+        const frontRayEnd = { x: this.frontWheel.position.x, y: this.frontWheel.position.y + wheelRadius + rayLength };
+        const frontHit = this.scene.matter.world.raycast(frontRayStart, frontRayEnd, {
+            collisionFilter: { category: this.scene.collisionCategories.ground }
+        });
+
+        if (rearHit.collided || frontHit.collided) {
+            grounded = true;
+        }
+        this.onGround = grounded; // Update the onGround state
+
+        const airTorque = 0.005; // Gentle rotation
+
+        // We need to know if we are in air to award flips.
+        // Let's use a "flip tracker" based on rotation accumulation.
+
+        if (!this.lastAngle) this.lastAngle = this.chassis.angle;
+        if (this.airSpin === undefined) this.airSpin = 0;
+
+        const da = this.chassis.angle - this.lastAngle;
+        // Handle wrap around PI/-PI? Matter angles are continuous usually or clamped?
+        // Matter body angle is continuous radians.
+
+        if (!this.onGround && Math.abs(da) > 0.01) { // Only accumulate spin if in air and actually rotating
+            this.airSpin += da;
+        } else if (this.onGround) {
+            this.airSpin = 0; // Reset spin on ground
+        }
+
+        this.lastAngle = this.chassis.angle;
+
+        // Manual Air Rotate (only if not grounded)
+        if (!this.onGround) {
+            if (this.cursors.left.isDown || this.keys.a.isDown) {
+                this.scene.matter.body.setAngularVelocity(this.chassis, this.chassis.angularVelocity - airTorque);
+            }
+            if (this.cursors.right.isDown || this.keys.d.isDown) {
+                this.scene.matter.body.setAngularVelocity(this.chassis, this.chassis.angularVelocity + airTorque);
+            }
+        }
+
+        // FLIP REWARD LOGIC IS HANDLED IN GAME.JS COLLISION OR UPDATE?
+        // Let's just expose total rotation.
 
         // PARTICLES
         if (this.scene.particles) {
