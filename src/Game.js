@@ -65,12 +65,35 @@ export default class Game extends Phaser.Scene {
         });
 
         // Settings... (kept same)
+        // Settings... (kept same)
         const settingsBtn = document.getElementById('settings-btn');
         if (settingsBtn) {
             settingsBtn.onclick = () => {
                 const isMuted = this.soundManager.toggleMute();
                 settingsBtn.innerText = isMuted ? 'SOUND: OFF' : 'SOUND: ON';
             };
+        }
+
+        this.themeMode = 'DARK';
+        const themeBtn = document.getElementById('theme-btn');
+        if (themeBtn) {
+            themeBtn.onclick = () => this.toggleTheme();
+        }
+    }
+
+    toggleTheme() {
+        this.themeMode = this.themeMode === 'DARK' ? 'LIGHT' : 'DARK';
+        const btn = document.getElementById('theme-btn');
+        if (btn) btn.innerText = `THEME: ${this.themeMode}`;
+
+        if (this.themeMode === 'LIGHT') {
+            document.body.classList.add('light-mode');
+        } else {
+            document.body.classList.remove('light-mode');
+        }
+
+        if (this.bg) {
+            this.bg.setMode(this.themeMode);
         }
     }
 
@@ -197,6 +220,8 @@ export default class Game extends Phaser.Scene {
         // Gravity Settings
         if (terrainType === 'MOON') {
             this.matter.world.setGravity(0, 0.4); // Low gravity
+        } else if (terrainType === 'MARS') {
+            this.matter.world.setGravity(0, 0.6); // Mars gravity
         } else {
             this.matter.world.setGravity(0, 1); // Normal gravity
         }

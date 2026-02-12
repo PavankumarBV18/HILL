@@ -6,6 +6,8 @@ export default class BackgroundManager {
         this.layers = [];
         this.width = this.scene.scale.width;
         this.height = this.scene.scale.height;
+        this.mode = 'DARK'; // Default
+        this.currentType = 'GRASS';
 
         this.init();
     }
@@ -41,7 +43,13 @@ export default class BackgroundManager {
         this.layers.push({ obj: hills, speed: 0.5, offsetX: 0, type: 'hills' });
     }
 
+    setMode(mode) {
+        this.mode = mode;
+        this.setTheme(this.currentType);
+    }
+
     setTheme(type) {
+        this.currentType = type;
         // Find layers
         const sky = this.layers.find(l => l.type === 'sky').obj;
         const mountains = this.layers.find(l => l.type === 'mountains').obj;
@@ -51,24 +59,74 @@ export default class BackgroundManager {
         mountains.clear();
         hills.clear();
 
+        const isLight = (this.mode === 'LIGHT');
+
         if (type === 'MOON') {
-            // Dark Space
-            sky.fillGradientStyle(0x000000, 0x000000, 0x2C3E50, 0x2C3E50, 1);
-            sky.fillRect(0, 0, this.width, this.height);
-            this.createMountains(mountains, 0x7F8C8D); // Grey
-            this.createHills(hills, 0x95A5A6); // Light Grey
+            // MOON: Dark Mode = Space / Light Mode = Grey Day
+            if (isLight) {
+                sky.fillGradientStyle(0xD0D3D4, 0xD0D3D4, 0xECF0F1, 0xECF0F1, 1);
+                sky.fillRect(0, 0, this.width, this.height);
+                this.createMountains(mountains, 0x95A5A6); // Lighter Grey
+                this.createHills(hills, 0xBDC3C7); // Silver
+            } else {
+                sky.fillGradientStyle(0x000000, 0x000000, 0x2C3E50, 0x2C3E50, 1);
+                sky.fillRect(0, 0, this.width, this.height);
+                this.createMountains(mountains, 0x7F8C8D); // Grey
+                this.createHills(hills, 0x95A5A6); // Light Grey
+            }
         } else if (type === 'DESERT') {
-            // Orange Sunset
-            sky.fillGradientStyle(0xF39C12, 0xF39C12, 0xF1C40F, 0xF1C40F, 1);
-            sky.fillRect(0, 0, this.width, this.height);
-            this.createMountains(mountains, 0xD35400); // Dark Orange
-            this.createHills(hills, 0xE67E22); // Orange
+            // DESERT: Dark Mode = Sunset / Light Mode = Bright Sun
+            if (isLight) {
+                sky.fillGradientStyle(0x87CEEB, 0x87CEEB, 0xFFFACD, 0xFFFACD, 1); // Blue to pale yellow
+                sky.fillRect(0, 0, this.width, this.height);
+                this.createMountains(mountains, 0xE59866); // Sandy Brown
+                this.createHills(hills, 0xF0B27A); // Light Sand
+            } else {
+                sky.fillGradientStyle(0xF39C12, 0xF39C12, 0xF1C40F, 0xF1C40F, 1); // Intense Orange
+                sky.fillRect(0, 0, this.width, this.height);
+                this.createMountains(mountains, 0xD35400); // Dark Orange
+                this.createHills(hills, 0xE67E22); // Orange
+            }
+
+        } else if (type === 'MARS') {
+            // MARS: Red Planet
+            if (isLight) {
+                sky.fillGradientStyle(0xFADBD8, 0xFADBD8, 0xE74C3C, 0xE74C3C, 1);
+                sky.fillRect(0, 0, this.width, this.height);
+                this.createMountains(mountains, 0xA93226); // Dark Red
+                this.createHills(hills, 0xC0392B); // Red
+            } else {
+                sky.fillGradientStyle(0x641E16, 0x641E16, 0x943126, 0x943126, 1);
+                sky.fillRect(0, 0, this.width, this.height);
+                this.createMountains(mountains, 0x512E5F); // Purple/Red
+                this.createHills(hills, 0x7B241C); // Dark Red
+            }
+        } else if (type === 'FOREST') {
+            // FOREST: Lush Green / Dark Woods
+            if (isLight) {
+                sky.fillGradientStyle(0xD5F5E3, 0xD5F5E3, 0x58D68D, 0x58D68D, 1);
+                sky.fillRect(0, 0, this.width, this.height);
+                this.createMountains(mountains, 0x196F3D); // Forest Green
+                this.createHills(hills, 0x27AE60); // Green
+            } else {
+                sky.fillGradientStyle(0x0E6251, 0x0E6251, 0x117864, 0x117864, 1);
+                sky.fillRect(0, 0, this.width, this.height);
+                this.createMountains(mountains, 0x145A32); // Dark Green
+                this.createHills(hills, 0x1E8449); // Darker Green
+            }
         } else {
-            // GRASS (Default)
-            sky.fillGradientStyle(0x87CEEB, 0x87CEEB, 0xFFFFFF, 0xFFFFFF, 1);
-            sky.fillRect(0, 0, this.width, this.height);
-            this.createMountains(mountains, 0x5D6D7E);
-            this.createHills(hills, 0x2ECC71);
+            // GRASS (Default): Dark Mode = Night / Light Mode = Day
+            if (isLight) {
+                sky.fillGradientStyle(0x87CEEB, 0x87CEEB, 0xFFFFFF, 0xFFFFFF, 1); // Blue Day
+                sky.fillRect(0, 0, this.width, this.height);
+                this.createMountains(mountains, 0x5D6D7E); // Grey Blue
+                this.createHills(hills, 0x2ECC71); // Green
+            } else {
+                sky.fillGradientStyle(0x1a1a2e, 0x16213e, 0x0f3460, 0x0f3460, 1); // Deep Blue Night
+                sky.fillRect(0, 0, this.width, this.height);
+                this.createMountains(mountains, 0x2C3E50); // Dark Blue Grey
+                this.createHills(hills, 0x196F3D); // Dark Green
+            }
         }
     }
 

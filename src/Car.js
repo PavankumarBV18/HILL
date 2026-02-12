@@ -20,99 +20,118 @@ export default class Car {
         const carGroup = this.scene.matter.world.nextGroup(true);
         const Bodies = Phaser.Physics.Matter.Matter.Bodies;
 
-        let chassisBody, wheelRadius, wheelSpeed, damping, stiffness, density, friction;
+        let chassisBody, wheelSpeed, damping, stiffness, density, friction;
         let visual;
         let chassisWidth, chassisHeight;
         let chassisAnchorY, suspensionLength;
+        let rearRadius, frontRadius;
 
         // Default configs
         wheelSpeed = 0.05;
-        // Tighter suspension settings for direct attachment feel
         damping = 0.8;
         friction = 1.0;
+        rearRadius = 16;
+        frontRadius = 16;
 
         if (type === 'SPORT') {
             visual = this.createSportVisual(x, y);
             chassisWidth = 110; chassisHeight = 20;
-            chassisAnchorY = 5; // Higher up
-            suspensionLength = 5; // Very tight, virtually attached
-
-            wheelRadius = 14; wheelSpeed = 0.10;
-            stiffness = 0.8;
-            density = 0.08;
-            this.axleXOffset = 35; // Closer wheels
+            chassisAnchorY = 5; suspensionLength = 5;
+            rearRadius = 14; frontRadius = 14;
+            wheelSpeed = 0.10; stiffness = 0.8; density = 0.08;
+            this.axleXOffset = 35;
 
         } else if (type === 'TRUCK') {
             visual = this.createTruckVisual(x, y);
             chassisWidth = 110; chassisHeight = 30;
-            chassisAnchorY = 15; // Bottom
-            suspensionLength = 5; // No more floating lift
-
-            wheelRadius = 22; wheelSpeed = 0.04; density = 0.1;
-            stiffness = 0.5;
+            chassisAnchorY = 15; suspensionLength = 5;
+            rearRadius = 22; frontRadius = 22;
+            wheelSpeed = 0.04; density = 0.1; stiffness = 0.5;
             this.axleXOffset = 45;
 
         } else if (type === 'BIKE') {
             visual = this.createBikeVisual(x, y);
-            chassisWidth = 80; chassisHeight = 20; // Slightly bigger frame
-            chassisAnchorY = 10;
-            suspensionLength = 5;
+            chassisWidth = 80; chassisHeight = 20;
+            chassisAnchorY = 10; suspensionLength = 5;
+            rearRadius = 16; frontRadius = 16;
+            wheelSpeed = 0.08; density = 0.06; stiffness = 0.5;
+            this.axleXOffset = 30;
 
-            // Royal Enfield Physics (Heavy, Stable)
-            wheelRadius = 16;
-            wheelSpeed = 0.08;
-            density = 0.06; // Heavy metal
-            stiffness = 0.5; // Softer Classic Suspension
-            this.axleXOffset = 30; // Longer wheelbase
+        } else if (type === 'TRACTOR') {
+            visual = this.createTractorVisual(x, y);
+            chassisWidth = 80; chassisHeight = 40;
+            chassisAnchorY = 20; suspensionLength = 5;
+            rearRadius = 28; frontRadius = 14; // Big rear, small front
+            wheelSpeed = 0.04; density = 0.12; stiffness = 0.4;
+            friction = 1.2; // High traction
+            this.axleXOffset = 25;
+
+        } else if (type === 'RACEBIKE') {
+            visual = this.createRaceBikeVisual(x, y);
+            chassisWidth = 90; chassisHeight = 20;
+            chassisAnchorY = 5; suspensionLength = 5;
+            rearRadius = 15; frontRadius = 15;
+            wheelSpeed = 0.11; density = 0.05; stiffness = 0.8;
+            this.axleXOffset = 35;
+
+        } else if (type === 'BUS') {
+            visual = this.createBusVisual(x, y);
+            chassisWidth = 160; chassisHeight = 40;
+            chassisAnchorY = 20; suspensionLength = 5;
+            rearRadius = 20; frontRadius = 20;
+            wheelSpeed = 0.04; density = 0.1; stiffness = 0.5;
+            this.axleXOffset = 60;
+
+        } else if (type === 'ATV') {
+            visual = this.createATVVisual(x, y);
+            chassisWidth = 70; chassisHeight = 25;
+            chassisAnchorY = 5; suspensionLength = 10; // High Travel
+            rearRadius = 16; frontRadius = 16;
+            wheelSpeed = 0.07; density = 0.06; stiffness = 0.4;
+            this.axleXOffset = 28;
 
         } else {
             // JEEP (Default)
             visual = this.createJeepVisual(x, y);
             chassisWidth = 100; chassisHeight = 20;
-            chassisAnchorY = 10;
-            suspensionLength = 5; // Attached nearby
-
-            wheelRadius = 16; wheelSpeed = 0.06;
-            stiffness = 0.6;
-            density = 0.04;
+            chassisAnchorY = 10; suspensionLength = 5;
+            rearRadius = 16; frontRadius = 16;
+            wheelSpeed = 0.06; stiffness = 0.6; density = 0.04;
             this.axleXOffset = 38;
         }
 
-        // 1. Create Simplified Physics Body (Rectangle)
-        // Center of Mass is geometric center.
+        // 1. Create Simplified Physics Body
         chassisBody = Bodies.rectangle(x, y, chassisWidth, chassisHeight, {
-            label: 'chassis',
-            density: density,
-            friction: friction
+            label: 'chassis', density: density, friction: friction
         });
 
         chassisBody.collisionFilter.group = carGroup;
-        // No extra visual offset necessary if visuals are centered
         this.chassis = this.scene.matter.add.gameObject(visual, chassisBody).body;
         this.currentWheelSpeed = wheelSpeed;
         this.chassisAnchorY = chassisAnchorY;
 
         // 2. Wheels
-        // Spawn wheels exactly at the target suspension point to prevent snap
-        const wheelY = y + chassisAnchorY + suspensionLength;
-        const wheelOpts = {
+        // Rear
+        const rY = y + chassisAnchorY + suspensionLength;
+        const rVisual = this.createWheelVisual(rearRadius, type);
+        rVisual.setPosition(x - this.axleXOffset, rY);
+        this.rearWheel = this.scene.matter.add.gameObject(rVisual, {
             collisionFilter: { group: carGroup, mask: 0xFFFFFFFF },
-            friction: 1.0,
-            density: density * 3, // Lower CoM by heavy wheels
-            restitution: 0.0,
-            label: 'wheel'
-        };
+            friction: 1.0, density: density * 3, label: 'wheel',
+            shape: { type: 'circle', radius: rearRadius }
+        }).body;
 
-        const rVisual = this.createWheelVisual(wheelRadius, type);
-        rVisual.setPosition(x - this.axleXOffset, wheelY);
-        this.rearWheel = this.scene.matter.add.gameObject(rVisual, { ...wheelOpts, shape: { type: 'circle', radius: wheelRadius } }).body;
+        // Front
+        const fY = y + chassisAnchorY + suspensionLength;
+        const fVisual = this.createWheelVisual(frontRadius, type);
+        fVisual.setPosition(x + this.axleXOffset, fY);
+        this.frontWheel = this.scene.matter.add.gameObject(fVisual, {
+            collisionFilter: { group: carGroup, mask: 0xFFFFFFFF },
+            friction: 1.0, density: density * 3, label: 'wheel',
+            shape: { type: 'circle', radius: frontRadius }
+        }).body;
 
-        const fVisual = this.createWheelVisual(wheelRadius, type);
-        fVisual.setPosition(x + this.axleXOffset, wheelY);
-        this.frontWheel = this.scene.matter.add.gameObject(fVisual, { ...wheelOpts, shape: { type: 'circle', radius: wheelRadius } }).body;
-
-        // 3. Axles (Constraints)
-        // Stiff springs, attached at chassis anchor
+        // 3. Axles
         this.rearAxle = this.scene.matter.add.constraint(this.chassis, this.rearWheel, suspensionLength, stiffness, {
             pointA: { x: -this.axleXOffset, y: chassisAnchorY }, pointB: { x: 0, y: 0 }, damping: damping
         });
@@ -121,15 +140,11 @@ export default class Car {
             pointA: { x: this.axleXOffset, y: chassisAnchorY }, pointB: { x: 0, y: 0 }, damping: damping
         });
 
-        // No shock lines drawn (removed in previous step)
         this.shockGraphics = this.scene.add.graphics();
         this.wheels = [this.rearWheel, this.frontWheel];
 
-        // Nitro System
-        this.nitroFuel = 100;
-        this.maxNitro = 100;
-        this.isNitro = false;
-        this.carType = type; // Store type for exhaust pos
+        this.nitroFuel = 100; this.maxNitro = 100; this.isNitro = false;
+        this.carType = type;
 
         this.setupControls();
     }
@@ -137,7 +152,7 @@ export default class Car {
     createWheelVisual(radius, type) {
         const g = this.scene.add.graphics();
 
-        if (type === 'TRUCK') {
+        if (type === 'TRUCK' || type === 'TRACTOR' || type === 'ATV') {
             // Heavy Tread, knobby
             g.fillStyle(0x111111, 1); g.fillCircle(0, 0, radius);
             g.lineStyle(3, 0x333333); g.strokeCircle(0, 0, radius);
@@ -153,7 +168,7 @@ export default class Car {
             g.fillStyle(0x555555, 1); g.fillCircle(0, 0, radius * 0.5);
             g.fillStyle(0x222222, 1); g.fillCircle(0, 0, radius * 0.1);
 
-        } else if (type === 'SPORT') {
+        } else if (type === 'SPORT' || type === 'RACEBIKE') {
             // Low profile, large rim
             g.fillStyle(0x1a1a1a, 1); g.fillCircle(0, 0, radius); // Tire
             g.fillStyle(0xCCCCCC, 1); g.fillCircle(0, 0, radius * 0.75); // Rim
@@ -522,6 +537,134 @@ export default class Car {
         return g;
     }
 
+    createTractorVisual(x, y) {
+        const g = this.scene.add.graphics({ x, y });
+        const green = 0x27AE60;
+
+        // Engine Block
+        g.fillStyle(green);
+        g.fillRoundedRect(-50, -10, 50, 30, 2);
+
+        // Cab
+        g.fillStyle(green);
+        g.fillRect(-10, -50, 40, 70);
+
+        // Roof
+        g.fillStyle(0xFFFFFF);
+        g.fillRect(-15, -55, 50, 5);
+
+        // Window
+        g.fillStyle(0x87CEEB, 0.7);
+        g.fillRect(-5, -45, 30, 25);
+
+        // Chimney (Exhaust)
+        g.fillStyle(0x2C3E50);
+        g.fillRect(-40, -40, 5, 30);
+        g.fillCircle(-37.5, -40, 4); // Flap
+
+        // Grill
+        g.fillStyle(0xECF0F1);
+        g.fillRect(-52, -5, 4, 20);
+
+        return g;
+    }
+
+    createRaceBikeVisual(x, y) {
+        const g = this.scene.add.graphics({ x, y });
+        const color = 0xE74C3C; // Red
+        const dark = 0x2C3E50;
+
+        // Fairing
+        g.fillStyle(color);
+        g.beginPath();
+        g.moveTo(30, -5);
+        g.lineTo(15, -25);
+        g.lineTo(-10, -20); // Tank
+        g.lineTo(-20, -10); // Seat
+        g.lineTo(-35, -25); // Tail
+        g.lineTo(-25, 5);
+        g.lineTo(25, 10);
+        g.closePath();
+        g.fillPath();
+
+        // Windshield
+        g.fillStyle(0x3498DB, 0.6);
+        g.beginPath();
+        g.moveTo(15, -25);
+        g.lineTo(5, -30);
+        g.lineTo(10, -20);
+        g.closePath();
+        g.fillPath();
+
+        // Rider (Leaning forward)
+        g.fillStyle(dark);
+        g.fillCircle(0, -35, 8); // Head
+        g.fillStyle(dark);
+        g.fillRoundedRect(-15, -30, 20, 10, 5); // Body
+
+        return g;
+    }
+
+
+
+    createBusVisual(x, y) {
+        const g = this.scene.add.graphics({ x, y });
+        const yellow = 0xF1C40F;
+
+        // Main Body
+        g.fillStyle(yellow);
+        g.fillRoundedRect(-75, -40, 150, 45, 5); // Huge body
+
+        // Windows
+        g.fillStyle(0x34495E);
+        for (let i = 0; i < 5; i++) {
+            g.fillRect(-70 + (i * 28), -35, 24, 15);
+        }
+
+        // Stripe
+        g.fillStyle(0x000000);
+        g.fillRect(-75, -15, 150, 4);
+
+        // Roof Details
+        g.fillStyle(0xBDC3C7);
+        g.fillRect(-50, -44, 30, 4);
+        g.fillRect(20, -44, 30, 4);
+
+        return g;
+    }
+
+    createATVVisual(x, y) {
+        const g = this.scene.add.graphics({ x, y });
+        const color = 0x8E44AD; // Purple
+
+        // Body
+        g.fillStyle(color);
+        g.beginPath();
+        g.moveTo(-20, 5);
+        g.lineTo(-25, -15); // Seat back
+        g.lineTo(0, -15);   // Seat
+        g.lineTo(10, -20);  // Tank
+        g.lineTo(25, -10);  // Front
+        g.lineTo(20, 5);
+        g.closePath();
+        g.fillPath();
+
+        // Handlebars
+        g.lineStyle(3, 0xBDC3C7);
+        g.beginPath();
+        g.moveTo(10, -20);
+        g.lineTo(8, -28);
+        g.lineTo(18, -30);
+        g.strokePath();
+
+        // Rider
+        g.fillStyle(0xD35400); // Orange Suit
+        g.fillCircle(-5, -35, 9); // Head
+        g.fillRect(-15, -30, 20, 15); // Body
+
+        return g;
+    }
+
     setupControls() {
         this.cursors = this.scene.input.keyboard.createCursorKeys();
         const btnGas = document.getElementById('gas-btn');
@@ -564,6 +707,11 @@ export default class Car {
             case 'SPORT': return { x: -55, y: 0 };
             case 'TRUCK': return { x: -5, y: -55 }; // Stack
             case 'BIKE': return { x: -25, y: 5 };
+            case 'TRACTOR': return { x: -37, y: -45 }; // Chimney
+            case 'RACEBIKE': return { x: -35, y: -5 };
+
+            case 'BUS': return { x: -75, y: 0 };
+            case 'ATV': return { x: -25, y: 0 };
             case 'JEEP': default: return { x: -45, y: 10 };
         }
     }
@@ -608,6 +756,8 @@ export default class Car {
                 this.scene.matter.body.setAngularVelocity(this.frontWheel, this.frontWheel.angularVelocity - currentSpeed);
             }
         }
+
+
 
         // PARTICLES
         if (this.scene.particles) {
